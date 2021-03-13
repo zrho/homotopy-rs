@@ -1,8 +1,8 @@
+use self::hashconsing::{Diagram, DiagramN, Generator};
 use homotopy_core::attach::BoundaryPath;
 use homotopy_core::common::*;
 use homotopy_core::diagram::NewDiagramError;
 use homotopy_core::expansion::ExpansionError;
-use homotopy_core::{Diagram, DiagramN};
 use im::{HashMap, Vector};
 use std::collections::BTreeSet;
 use std::convert::*;
@@ -14,6 +14,191 @@ pub mod serialize;
 use std::cmp::Ordering;
 
 pub type Signature = HashMap<Generator, GeneratorInfo>;
+
+pub mod hashconsing {
+    use std::convert::{TryFrom, TryInto};
+
+    use hashconsing::{consign, HConsed, HashConsign};
+    use homotopy_core::{
+        common::{DimensionError, SingularHeight},
+        diagram::{AttachmentError, NewDiagramError},
+        expansion::ExpansionError,
+        Bias, Boundary, Direction, SliceIndex,
+    };
+    #[derive(Debug, PartialEq, Eq, Clone, Hash)]
+    pub struct Generator(HConsed<homotopy_core::Generator>);
+
+    impl From<Generator> for homotopy_core::Generator {
+        fn from(generator: Generator) -> Self {
+            generator.0.get().clone()
+        }
+    }
+
+    consign! {
+        let GENERATOR_FACTORY = consign(37) for homotopy_core::Generator;
+    }
+
+    impl From<homotopy_core::Generator> for Generator {
+        fn from(generator: homotopy_core::Generator) -> Self {
+            Generator(GENERATOR_FACTORY.mk(generator))
+        }
+    }
+
+    impl TryFrom<Diagram> for Generator {
+        type Error = DimensionError;
+
+        fn try_from(from: Diagram) -> Result<Self, Self::Error> {
+            from.try_into()
+        }
+    }
+
+    impl Generator {
+        pub fn new(id: usize, dimension: usize) -> Self {
+            homotopy_core::Generator::new(id, dimension).into()
+        }
+    }
+
+    #[derive(Debug, PartialEq, Eq, Clone, Hash)]
+    pub struct Diagram(HConsed<homotopy_core::Diagram>);
+
+    impl From<Diagram> for homotopy_core::Diagram {
+        fn from(diagram: Diagram) -> Self {
+            diagram.0.get().clone()
+        }
+    }
+
+    consign! {
+        let DIAGRAM_FACTORY = consign(37) for homotopy_core::Diagram;
+    }
+
+    impl From<homotopy_core::Diagram> for Diagram {
+        fn from(diagram: homotopy_core::Diagram) -> Self {
+            Diagram(DIAGRAM_FACTORY.mk(diagram))
+        }
+    }
+
+    impl From<Generator> for Diagram {
+        fn from(generator: Generator) -> Self {
+            generator.into()
+        }
+    }
+
+    impl From<DiagramN> for Diagram {
+        fn from(diagramn: DiagramN) -> Self {
+            diagramn.into()
+        }
+    }
+
+    impl TryFrom<Diagram> for DiagramN {
+        type Error = DimensionError;
+
+        fn try_from(from: Diagram) -> Result<Self, Self::Error> {
+            from.try_into()
+        }
+    }
+
+    impl<'a> TryFrom<&'a Diagram> for &'a DiagramN {
+        type Error = DimensionError;
+
+        fn try_from(from: &'a Diagram) -> Result<Self, Self::Error> {
+            from.try_into()
+        }
+    }
+
+    impl Diagram {
+        pub fn dimension(&self) -> usize {
+            self.0.dimension()
+        }
+
+        pub fn identity(&self) -> DiagramN {
+            self.0.identity().into()
+        }
+    }
+
+    #[derive(Debug, PartialEq, Eq, Clone, Hash)]
+    pub struct DiagramN(HConsed<homotopy_core::DiagramN>);
+
+    impl From<DiagramN> for homotopy_core::DiagramN {
+        fn from(diagramn: DiagramN) -> Self {
+            diagramn.0.get().clone()
+        }
+    }
+
+    consign! {
+        let DIAGRAMN_FACTORY = consign(37) for homotopy_core::DiagramN;
+    }
+
+    impl From<homotopy_core::DiagramN> for DiagramN {
+        fn from(diagramn: homotopy_core::DiagramN) -> Self {
+            DiagramN(DIAGRAMN_FACTORY.mk(diagramn))
+        }
+    }
+
+    impl DiagramN {
+        pub fn new<S, T>(
+            generator: Generator,
+            source: S,
+            target: T,
+        ) -> Result<Self, NewDiagramError>
+        where
+            S: Into<Diagram>,
+            T: Into<Diagram>,
+        {
+            homotopy_core::DiagramN::new(generator.into(), source.into(), target.into())
+                .map(|x| x.into())
+        }
+
+        pub fn identity(&self) -> DiagramN {
+            self.0.identity().into()
+        }
+
+        pub fn contract(
+            &self,
+            path: &[SliceIndex],
+            height: SingularHeight,
+            bias: Option<Bias>,
+        ) -> Option<DiagramN> {
+            self.0.contract(path, height, bias).map(|x| x.into())
+        }
+
+        pub fn expand(
+            &self,
+            path: &[SliceIndex],
+            direction: Direction,
+        ) -> Result<DiagramN, ExpansionError> {
+            self.0.expand(path, direction).map(|x| x.into())
+        }
+
+        pub fn attach(
+            &self,
+            diagram: DiagramN,
+            boundary: Boundary,
+            embedding: &[usize],
+        ) -> Result<DiagramN, AttachmentError> {
+            self.0
+                .attach(diagram.into(), boundary, embedding)
+                .map(|x| x.into())
+        }
+
+        pub fn target(&self) -> Diagram {
+            self.0.target().into()
+        }
+
+        pub fn slice<I>(&self, index: I) -> Option<Diagram>
+        where
+            I: Into<SliceIndex>,
+        {
+            self.0.slice(index).map(|x| x.into())
+        }
+    }
+
+    #[derive(Debug, PartialEq, Eq, Clone, Hash)]
+    pub struct Rewrite(HConsed<homotopy_core::Rewrite>);
+
+    consign! {
+        let REWRITE_FACTORY = consign(37) for homotopy_core::Rewrite;
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
@@ -346,9 +531,10 @@ impl State {
                 None => workspace.diagram.clone(),
                 Some(boundary_path) => DiagramN::try_from(workspace.diagram.clone())
                     .ok()
-                    .map(|diagram| boundary_path.follow(&diagram))
+                    .map(|diagram| boundary_path.follow(&diagram.into()))
                     .flatten()
-                    .unwrap(),
+                    .unwrap()
+                    .into(),
             };
 
             let boundary: Boundary = boundary_path
@@ -593,8 +779,12 @@ const COLORS: &[&str] = &[
     "#000000", //black
 ];
 
-fn contains_point(diagram: Diagram, point: &[Height], embedding: &[RegularHeight]) -> bool {
-    use Diagram::*;
+fn contains_point(
+    diagram: homotopy_core::Diagram,
+    point: &[Height],
+    embedding: &[RegularHeight],
+) -> bool {
+    use homotopy_core::Diagram::*;
 
     match (point.split_first(), diagram) {
         (None, _) => true,

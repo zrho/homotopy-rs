@@ -5,12 +5,14 @@ authors = ["Lukas Heidemann <lukas@heidemann.me>", "Nick Hu <me@nickhu.co.uk>"]
 edition = "2018"
 
 [dependencies]
+hashconsing = "*"
 highway = "*"
 log = "*"
 petgraph = "*"
 serde = { features = ["derive"], version = "1.0" }
 rmp-serde = { features = ["serde128"], version = "*" } # u128 support is new
 thiserror = "*"
+hashcons-derive = { path = "../hashcons-derive" }
 
 [dev-dependencies]
 cargo-husky = { features = ["precommit-hook", "run-cargo-check", "run-cargo-test", "run-cargo-fmt", "run-cargo-clippy"], version = "*" }

@@ -17,6 +17,7 @@ wasm-opt = false
 default = ["console_error_panic_hook", "wee_alloc"]
 
 [dependencies]
+hashconsing = "*"
 homotopy-core = { path = "../homotopy-core" }
 homotopy-graphics = { path = "../homotopy-graphics" }
 closure = "0.3"

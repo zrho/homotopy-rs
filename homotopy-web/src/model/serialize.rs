@@ -55,8 +55,8 @@ impl From<Signature> for Data {
         let mut stripped: std::collections::HashMap<Generator, Diagram> = Default::default();
         let mut generator_info: HashMap<Generator, (String, String)> = Default::default();
         for (k, v) in sig.into_iter() {
-            stripped.insert(k, v.diagram);
-            generator_info.insert(k, (v.name, v.color));
+            stripped.insert(k.into(), v.diagram.into());
+            generator_info.insert(k.into(), (v.name, v.color));
         }
         Data {
             signature: Serialization::from(stripped),
@@ -72,11 +72,11 @@ impl From<(Signature, Workspace)> for Data {
         let mut generator_info: HashMap<Generator, (String, String)> = Default::default();
         let k = ws.diagram.key();
         for (k, v) in sig.into_iter() {
-            stripped.insert(k, v.diagram);
-            generator_info.insert(k, (v.name, v.color));
+            stripped.insert(k.into(), v.diagram.into());
+            generator_info.insert(k.into(), (v.name, v.color));
         }
         Data {
-            signature: Serialization::from((stripped, ws.diagram)),
+            signature: Serialization::from((stripped, ws.diagram.into())),
             generator_info,
             workspace: Some(WorkspaceSer {
                 diagram: k,
@@ -91,9 +91,9 @@ impl From<(Signature, Workspace)> for Data {
 impl From<Data> for (Signature, Option<Workspace>) {
     fn from(data: Data) -> Self {
         let workspace: Option<Workspace> = if let Some(ws) = data.workspace {
-            let d = data.signature.diagram(ws.diagram);
+            let d = data.signature.diagram(ws.diagram.into());
             Some(Workspace {
-                diagram: d,
+                diagram: d.into(),
                 path: ws.path,
                 attach: ws.attach,
                 highlight: ws.highlight,
@@ -107,11 +107,11 @@ impl From<Data> for (Signature, Option<Workspace>) {
             sig.into_iter()
                 .map(|(k, v)| {
                     (
-                        k,
+                        k.into(),
                         GeneratorInfo {
                             name: gi[&k].0.clone(),
                             color: gi[&k].1.clone(),
-                            diagram: v,
+                            diagram: v.into(),
                         },
                     )
                 })

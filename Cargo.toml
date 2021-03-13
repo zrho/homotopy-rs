@@ -5,6 +5,8 @@ members = [
   "homotopy-graphics",
 ]
 
+exclude = [ "hashcons-derive" ]
+
 [profile.release]
 # This makes the compiled code faster and smaller, but it makes compiling slower,
 # so it's only enabled in release mode.

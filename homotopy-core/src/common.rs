@@ -1,14 +1,16 @@
+use hashcons_derive::{hashcons, HashCons};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::cmp::Ordering;
 use std::fmt;
 use thiserror::*;
 
-#[derive(PartialEq, Eq, Copy, Clone, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Copy, Clone, PartialOrd, Ord, Hash, Serialize, Deserialize, HashCons)]
 pub struct Generator {
     pub id: usize,
     pub dimension: usize,
 }
 
+#[hashcons(Generator)]
 impl Generator {
     pub fn new(id: usize, dimension: usize) -> Self {
         Generator { id, dimension }

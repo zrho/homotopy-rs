@@ -3,18 +3,20 @@ use crate::common::*;
 use crate::contraction::*;
 use crate::expansion::*;
 use crate::rewrite::*;
+use hashcons_derive::{hashcons, HashCons};
 use std::convert::TryFrom;
 use std::convert::*;
 use std::fmt;
-use std::rc::Rc;
+use std::sync::Arc;
 use thiserror::Error;
 
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone, HashCons)]
 pub enum Diagram {
     Diagram0(Generator),
     DiagramN(DiagramN),
 }
 
+#[hashcons(Generator, Diagram, DiagramN)]
 impl Diagram {
     pub fn to_generator(&self) -> Option<Generator> {
         use Diagram::*;
@@ -101,9 +103,10 @@ impl Diagram {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone)]
-pub struct DiagramN(Rc<DiagramInternal>);
+#[derive(PartialEq, Eq, Hash, Clone, HashCons)]
+pub struct DiagramN(Arc<DiagramInternal>);
 
+#[hashcons(Generator, Diagram, DiagramN)]
 impl DiagramN {
     pub fn new<S, T>(generator: Generator, source: S, target: T) -> Result<Self, NewDiagramError>
     where
@@ -133,7 +136,7 @@ impl DiagramN {
     }
 
     pub(crate) fn new_unsafe(source: Diagram, cospans: Vec<Cospan>) -> Self {
-        DiagramN(Rc::new(DiagramInternal { source, cospans }))
+        DiagramN(Arc::new(DiagramInternal { source, cospans }))
     }
 
     /// The dimension of the diagram, which is at least one.
@@ -194,8 +197,9 @@ impl DiagramN {
         }
     }
 
-    pub(crate) fn rewrite_forward(mut self, rewrite: &RewriteN) -> DiagramN {
-        let diagram: &mut DiagramInternal = Rc::make_mut(&mut self.0);
+    pub(crate) fn rewrite_forward(self, rewrite: &RewriteN) -> DiagramN {
+        let mut s = self;
+        let diagram: &mut DiagramInternal = Arc::make_mut(&mut s.0);
         let mut offset: isize = 0;
 
         for cone in rewrite.cones() {
@@ -207,11 +211,12 @@ impl DiagramN {
             offset -= cone.len() as isize - 1;
         }
 
-        DiagramN(self.0)
+        DiagramN(s.0)
     }
 
-    pub(crate) fn rewrite_backward(mut self, rewrite: &RewriteN) -> DiagramN {
-        let diagram: &mut DiagramInternal = Rc::make_mut(&mut self.0);
+    pub(crate) fn rewrite_backward(self, rewrite: &RewriteN) -> DiagramN {
+        let mut s = self;
+        let diagram: &mut DiagramInternal = Arc::make_mut(&mut s.0);
 
         for cone in rewrite.cones() {
             let start = cone.index;
@@ -219,7 +224,7 @@ impl DiagramN {
             diagram.cospans.splice(start..stop, cone.source.clone());
         }
 
-        DiagramN(self.0)
+        DiagramN(s.0)
     }
 
     pub fn cospans(&self) -> &[Cospan] {

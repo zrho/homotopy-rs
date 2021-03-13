@@ -1,19 +1,21 @@
 use crate::common::*;
 use crate::diagram::*;
+use hashcons_derive::{hashcons, HashCons};
 
 use std::cmp::Ordering;
 use std::convert::*;
 use std::fmt;
 use std::ops::Range;
-use std::rc::Rc;
+use std::sync::Arc;
 use thiserror::Error;
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, HashCons)]
 pub struct Cospan {
     pub forward: Rewrite,
     pub backward: Rewrite,
 }
 
+#[hashcons]
 impl Cospan {
     pub(crate) fn pad(&self, embedding: &[usize]) -> Self {
         let forward = self.forward.pad(embedding);
@@ -26,7 +28,7 @@ impl Cospan {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Hash)]
+#[derive(PartialEq, Eq, Clone, Hash, HashCons)]
 pub enum Rewrite {
     Rewrite0(Rewrite0),
     RewriteN(RewriteN),
@@ -86,6 +88,7 @@ impl TryFrom<Rewrite> for Rewrite0 {
     }
 }
 
+#[hashcons(Generator, Diagram)]
 impl Rewrite {
     pub fn identity(dimension: usize) -> Self {
         if dimension == 0 {
@@ -119,7 +122,7 @@ impl Rewrite {
         }
     }
 
-    pub fn compose(f: Rewrite, g: Rewrite) -> Result<Rewrite, CompositionError> {
+    pub fn compose(f: Self, g: Self) -> Result<Self, CompositionError> {
         match (f, g) {
             (Rewrite::Rewrite0(f), Rewrite::Rewrite0(g)) => Ok(Rewrite0::compose(f, g)?.into()),
             (Rewrite::RewriteN(f), Rewrite::RewriteN(g)) => Ok(RewriteN::compose(f, g)?.into()),
@@ -127,7 +130,7 @@ impl Rewrite {
         }
     }
 
-    pub fn cone_over_generator(generator: Generator, base: Diagram) -> Rewrite {
+    pub fn cone_over_generator(generator: Generator, base: Diagram) -> Self {
         match base {
             Diagram::Diagram0(base) => Rewrite0::new(base, generator).into(),
             Diagram::DiagramN(base) => RewriteN::new(
@@ -151,7 +154,7 @@ impl Rewrite {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, HashCons)]
 pub struct Rewrite0(pub(crate) Option<(Generator, Generator)>);
 
 impl fmt::Debug for Rewrite0 {
@@ -163,6 +166,7 @@ impl fmt::Debug for Rewrite0 {
     }
 }
 
+#[hashcons(Generator)]
 impl Rewrite0 {
     pub fn new(source: Generator, target: Generator) -> Self {
         if source == target {
@@ -204,8 +208,8 @@ impl Rewrite0 {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Hash)]
-pub struct RewriteN(Rc<RewriteInternal>);
+#[derive(PartialEq, Eq, Clone, Hash, HashCons)]
+pub struct RewriteN(Arc<RewriteInternal>);
 
 impl fmt::Debug for RewriteN {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -219,6 +223,7 @@ struct RewriteInternal {
     cones: Vec<Cone>,
 }
 
+#[hashcons(Cone)]
 impl RewriteN {
     pub(crate) fn new(dimension: usize, cones: Vec<Cone>) -> Self {
         if dimension == 0 {
@@ -230,7 +235,7 @@ impl RewriteN {
             .filter(|cone| !cone.is_identity())
             .collect();
 
-        RewriteN(Rc::new(RewriteInternal { dimension, cones }))
+        RewriteN(Arc::new(RewriteInternal { dimension, cones }))
     }
 
     pub(crate) fn cones(&self) -> &[Cone] {
@@ -278,7 +283,7 @@ impl RewriteN {
         source_cospans: &[Cospan],
         target_cospans: &[Cospan],
         slices: Vec<Vec<Rewrite>>,
-    ) -> RewriteN {
+    ) -> Self {
         let mut cones = Vec::new();
         let mut index = 0;
 
@@ -336,7 +341,7 @@ impl RewriteN {
             .unwrap_or_else(|| Rewrite::identity(self.dimension() - 1))
     }
 
-    pub fn compose(f: RewriteN, g: RewriteN) -> Result<RewriteN, CompositionError> {
+    pub fn compose(f: Self, g: Self) -> Result<Self, CompositionError> {
         if f.dimension() != g.dimension() {
             return Err(CompositionError::Dimension(f.dimension(), g.dimension()));
         }
@@ -492,7 +497,7 @@ impl fmt::Debug for RewriteInternal {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, HashCons)]
 pub(crate) struct Cone {
     pub(crate) index: usize,
     pub(crate) source: Vec<Cospan>,
@@ -500,6 +505,7 @@ pub(crate) struct Cone {
     pub(crate) slices: Vec<Rewrite>,
 }
 
+#[hashcons]
 impl Cone {
     pub(crate) fn is_identity(&self) -> bool {
         self.slices.len() == 1
