@@ -4,6 +4,7 @@ use homotopy_core::{attach::BoundaryPath, common::DimensionError};
 use homotopy_core::{contraction::ContractionError, expansion::ExpansionError};
 use homotopy_core::{diagram::NewDiagramError, typecheck::TypeError};
 use homotopy_core::{Diagram, DiagramN};
+use homotopy_core::cubicalisation::cubicalise;
 use im::{ordmap, OrdMap, Vector};
 use std::{collections::BTreeSet, ops::Deref};
 use std::{
@@ -152,6 +153,8 @@ pub enum Action {
     Theorem,
 
     Imported,
+
+    Cubicalise
 }
 
 #[derive(Debug, Error)]
@@ -225,7 +228,22 @@ impl ProofState {
             Action::Restrict => self.restrict(),
             Action::Theorem => self.theorem(),
             Action::Imported => Ok(()),
+            Action::Cubicalise => self.run_cubicalisation(),
         }
+    }
+
+    /// Runs `cubicalise` method which will print the result to log.
+    fn run_cubicalisation(&self) -> Result<(), ModelError> {
+        let diagram: DiagramN = self
+            .workspace
+            .as_ref()
+            .ok_or(ModelError::InvalidAction)?
+            .diagram
+            .clone()
+            .try_into()
+            .map_err(|_dimerr| ModelError::InvalidAction)?;
+        cubicalise(&diagram);
+        Ok(())
     }
 
     /// Handler for [Action::CreateGeneratorZero].

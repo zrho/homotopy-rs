@@ -179,4 +179,12 @@ declare_sidebar_tools! {
         Some('c'),
         |proof: &Proof| proof.workspace().is_some().into(),
     }
+
+    BUTTON_CUBICALISE {
+        "Cubicalise",
+        "star",
+        model::Action::Proof(model::proof::Action::Cubicalise),
+        None,
+        |proof: &Proof| proof.workspace().is_some().into(),
+    }
 }
