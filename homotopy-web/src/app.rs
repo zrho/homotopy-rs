@@ -2,6 +2,7 @@ mod attach;
 mod components;
 mod diagram2d;
 mod diagram3d;
+mod diagram4d;
 mod panzoom;
 mod project;
 mod settings;

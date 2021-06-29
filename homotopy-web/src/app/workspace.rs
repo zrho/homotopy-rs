@@ -3,6 +3,7 @@ mod slice_control;
 
 use crate::app::diagram2d::{Diagram1D, Diagram2D, Highlight2D};
 use crate::app::diagram3d::Diagram3D;
+use crate::app::diagram4d::Diagram4D;
 use crate::app::panzoom;
 use crate::model::proof::homotopy::Homotopy;
 use crate::model::proof::{Action, Signature, Workspace};
@@ -159,7 +160,11 @@ impl WorkspaceView {
             }
             Diagram::DiagramN(diagram) if diagram.dimension() == 4 => {
                 html! {
-                    <div>{"todo: 4-dimensional diagram!!"}</div>
+                    <div>
+                        <Diagram4D
+                            diagram={diagram.clone()}
+                        />
+                    </div>
                 }
             }
             Diagram::DiagramN(diagram) => {
