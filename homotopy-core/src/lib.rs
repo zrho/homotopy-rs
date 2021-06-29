@@ -54,6 +54,7 @@ pub mod expansion;
 pub mod factorization;
 pub mod graph;
 pub mod idx;
+pub mod labelled;
 pub mod normalization;
 pub mod projection;
 pub mod rewrite;

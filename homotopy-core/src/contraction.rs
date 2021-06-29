@@ -1,12 +1,9 @@
+use crate::common::{Boundary, Height, SingularHeight};
 use crate::rewrite::{Cone, Cospan, Rewrite, Rewrite0, RewriteN};
 use crate::util::FastHashMap;
 use crate::{
     attach::{attach, BoundaryPath},
     typecheck::TypeError,
-};
-use crate::{
-    common::{Boundary, Height, SingularHeight},
-    typecheck::typecheck_cospan,
 };
 use crate::{
     diagram::{Diagram, DiagramN},
@@ -99,12 +96,12 @@ impl DiagramN {
                 },
             };
 
-            typecheck_cospan(
-                slice.into(),
-                cospan.clone(),
-                boundary_path.boundary(),
-                signature,
-            )?;
+            // typecheck_cospan(
+            //     slice.into(),
+            //     cospan.clone(),
+            //     boundary_path.boundary(),
+            //     signature,
+            // )?;
 
             Ok(vec![cospan])
         })
@@ -285,7 +282,7 @@ fn colimit_base(
         Ok(diagrams
             .iter()
             .map(|(diagram, _)| {
-                Rewrite0::new(diagram.to_generator().unwrap(), max_generator).into()
+                Rewrite0::new(diagram.to_generator().unwrap(), max_generator, todo!()).into()
             })
             .collect())
     } else {

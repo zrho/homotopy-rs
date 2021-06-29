@@ -75,11 +75,13 @@ pub fn factorize(
     // General cases
     match (f, g, source, target) {
         (
-            Rewrite::Rewrite0(Rewrite0(Some((fs, ft)))),
-            Rewrite::Rewrite0(Rewrite0(Some((gs, gt)))),
+            Rewrite::Rewrite0(Rewrite0(Some((fs, ft, _fl)))),
+            Rewrite::Rewrite0(Rewrite0(Some((gs, gt, _gl)))),
             Diagram::Diagram0(s),
             Diagram::Diagram0(t),
-        ) if fs == s && ft == gt && gs == t => Ok(Rewrite::from(Rewrite0(Some((fs, gs))))),
+        ) if fs == s && ft == gt && gs == t => {
+            Ok(Rewrite::from(Rewrite0::new(fs, gs, unimplemented!())))
+        }
         (
             Rewrite::RewriteN(fr),
             Rewrite::RewriteN(gr),

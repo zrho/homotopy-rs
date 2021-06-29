@@ -1,11 +1,15 @@
-use crate::rewrite::{Cospan, Rewrite, RewriteN};
 use crate::{
     attach::{attach, BoundaryPath},
+    labelled::{simplices, Complex},
     util::first_max_generator,
 };
 use crate::{
     common::{Boundary, DimensionError, Direction, Generator, Height, RegularHeight, SliceIndex},
     util::Hasher,
+};
+use crate::{
+    labelled::{cone_simplices, Label, LabelError, Simplex},
+    rewrite::{Cone, Cospan, Rewrite, Rewrite0, RewriteN},
 };
 use hashconsing::{HConsed, HConsign, HashConsign};
 use std::fmt;
@@ -14,7 +18,11 @@ use std::{
     cell::RefCell,
     convert::{From, Into},
 };
-use std::{collections::HashSet, convert::TryFrom};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::TryFrom,
+    convert::TryInto,
+};
 use thiserror::Error;
 
 #[derive(PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
@@ -179,8 +187,8 @@ impl DiagramN {
         }
 
         let cospan = Cospan {
-            forward: Rewrite::cone_over_generator(generator, source.clone()),
-            backward: Rewrite::cone_over_generator(generator, target),
+            forward: Rewrite::cone_over_generator(generator, source.clone(), Direction::Forward),
+            backward: Rewrite::cone_over_generator(generator, target, Direction::Backward),
         };
 
         Ok(Self::new_unsafe(source, vec![cospan]))
@@ -402,6 +410,102 @@ impl DiagramN {
             }
         })
     }
+
+    // /// Initialise a diagram's labelling in the top dimension only
+    // pub fn label(&self, generator: Generator) -> Result<(), LabelError> {
+    //     assert_eq!(self.size(), 1); // this is a generating diagram
+    //     let cospan = &self.cospans()[0];
+    //     if let (Ok(f0), Ok(b0)) = (
+    //         <&Rewrite0>::try_from(&cospan.forward),
+    //         <&Rewrite0>::try_from(&cospan.backward),
+    //     ) {
+    //         let mut simplices: Complex<Height> = simplices(self.clone().into());
+    //         let center = &generator.label().1[0];
+    //         for n_simplices in &mut simplices {
+    //             // keep only simplices which touch the generator
+    //             n_simplices.retain(|simplex| simplex.last() == Some(center));
+    //         }
+    //         assert!(simplices[1].len() == 2);
+    //         let mut one_simplices: Vec<Simplex<Height>> = simplices.remove(1).into_iter().collect();
+    //         drop(simplices);
+    //         one_simplices.sort();
+    //         let backward = one_simplices.pop().unwrap();
+    //         if let Some(existing) = b0.1.get() {
+    //             if existing != &(generator, backward) {
+    //                 return Err(LabelError::Inconsistent);
+    //             }
+    //         } else {
+    //             b0.1.set((generator, backward)).unwrap();
+    //         }
+    //         let forward = one_simplices.pop().unwrap();
+    //         if let Some(existing) = f0.1.get() {
+    //             if existing != &(generator, forward) {
+    //                 return Err(LabelError::Inconsistent);
+    //             }
+    //         } else {
+    //             f0.1.set((generator, forward)).unwrap();
+    //         }
+    //     } else if let (Ok(f), Ok(b)) = (
+    //         <&RewriteN>::try_from(&cospan.forward),
+    //         <&RewriteN>::try_from(&cospan.backward),
+    //     ) {
+    //         let generate_labels = |cone: &Cone,
+    //                                transform: Box<dyn Fn(Vec<usize>) -> Vec<Height>>|
+    //          -> HashMap<Simplex<usize>, Label> {
+    //             let mut labels: HashMap<Simplex<usize>, Label> = Default::default();
+    //             let cone_simplices: Complex<usize> = cone_simplices(cone.clone());
+    //             for mut cone_n_simplices in cone_simplices {
+    //                 cone_n_simplices
+    //                     .retain(|simplex| simplex.last().unwrap().iter().all(|x| *x == 1));
+    //                 for simplex in cone_n_simplices {
+    //                     let transformed = simplex
+    //                         .iter()
+    //                         .map(|coords| transform(coords.clone()))
+    //                         .collect();
+    //                     labels.insert(simplex, (generator, transformed));
+    //                 }
+    //             }
+    //             labels
+    //         };
+    //         assert_eq!(f.cones().len(), 1);
+    //         assert_eq!(b.cones().len(), 1);
+    //         for cone in f.cones() {
+    //             let labels = generate_labels(
+    //                 &cone,
+    //                 Box::new(|coords| coords.iter().map(|x| Height::from_int(*x)).collect()),
+    //             );
+    //             cone.label(labels)?;
+    //         }
+    //         let fwd: RewriteN = Rewrite::cone_over_generator(generator, self.source())
+    //             .try_into()
+    //             .unwrap();
+    //         for cone in fwd.cones() {
+    //             cone.label(Default::default());
+    //         }
+    //         let bwd: RewriteN = Rewrite::cone_over_generator(generator, self.source())
+    //             .try_into()
+    //             .unwrap();
+    //         assert_eq!(fwd, bwd);
+    //         // for cone in b.cones() {
+    //         //     let labels = generate_labels(
+    //         //         &cone,
+    //         //         Box::new(|mut coords: Vec<usize>| {
+    //         //             // need to reflect along the line y = 1
+    //         //             if let Some((_, elements)) = coords.split_last_mut() {
+    //         //                 for c in elements {
+    //         //                     *c = 2 - *c;
+    //         //                 }
+    //         //             }
+    //         //             coords.iter().map(|x| Height::from_int(*x)).collect()
+    //         //         }),
+    //         //     );
+    //         //     cone.label(labels)?;
+    //         // }
+    //     } else {
+    //         return Err(LabelError::Inconsistent);
+    //     }
+    //     Ok(())
+    // }
 }
 
 impl fmt::Debug for DiagramN {

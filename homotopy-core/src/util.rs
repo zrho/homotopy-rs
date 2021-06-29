@@ -3,6 +3,21 @@ use std::{cell::Cell, collections::HashMap, collections::HashSet, hash::BuildHas
 use rustc_hash::FxHasher;
 
 use crate::common::Generator;
+use std::fmt::Debug;
+
+pub fn agreeing<T: Debug + Eq>(options: Vec<Option<T>>) -> Option<T> {
+    options
+        .into_iter()
+        .reduce(|x, y| match (x, y) {
+            (None, None) => None,
+            (Some(a), Some(b)) => {
+                assert_eq!(a, b);
+                Some(a)
+            }
+            (Some(a), None) | (None, Some(a)) => Some(a),
+        })
+        .flatten()
+}
 
 pub fn first_max_generator<I>(iterator: I, dimension_cutoff: Option<usize>) -> Option<Generator>
 where

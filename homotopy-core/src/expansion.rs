@@ -68,7 +68,7 @@ impl DiagramN {
                 },
             };
 
-            typecheck_cospan(slice, cospan.clone(), boundary_path.boundary(), signature)?;
+            // typecheck_cospan(slice, cospan.clone(), boundary_path.boundary(), signature)?;
 
             Ok(vec![cospan])
         })

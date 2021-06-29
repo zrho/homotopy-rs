@@ -3,6 +3,8 @@ use std::fmt;
 use std::{cmp::Ordering, iter::FusedIterator};
 use thiserror::Error;
 
+use crate::labelled::Label;
+
 #[derive(PartialEq, Eq, Copy, Clone, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Generator {
     pub dimension: usize,
@@ -12,6 +14,15 @@ pub struct Generator {
 impl Generator {
     pub fn new(id: usize, dimension: usize) -> Self {
         Self { dimension, id }
+    }
+
+    pub fn label(&self) -> Label {
+        (
+            *self,
+            vec![std::iter::repeat(Height::Singular(0))
+                .take(self.dimension)
+                .collect()],
+        )
     }
 }
 
