@@ -14,8 +14,13 @@ pub enum Key {
     Cons(SliceIndex, Box<Key>),
 }
 
+pub enum Bias {
+    Left,
+    Right
+}
+
 /// Take a diagram and turn into a cubical graph of dimension 0.
-pub fn cubicalise(diagram: &DiagramN) -> Graph<(Key, Diagram), Rewrite> {
+pub fn cubicalise(diagram: &DiagramN, _bias: Vec<Bias>) -> GraphBuilder<Key> {
 
     let mut graph = GraphBuilder::new(Key::Nil, diagram.clone().into());
 
@@ -26,9 +31,9 @@ pub fn cubicalise(diagram: &DiagramN) -> Graph<(Key, Diagram), Rewrite> {
             .parallelise(d)
     }
 
-    let x = graph.build();
+    let x = graph.clone().build();
     log::info!("Result of cubicalisation: {:?}", x);
-    x
+    graph
 }
 
 impl GraphBuilder<Key> {

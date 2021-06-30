@@ -242,7 +242,7 @@ impl ProofState {
             .clone()
             .try_into()
             .map_err(|_dimerr| ModelError::InvalidAction)?;
-        cubicalise(&diagram);
+        cubicalise(&diagram, vec![]);
         Ok(())
     }
 
